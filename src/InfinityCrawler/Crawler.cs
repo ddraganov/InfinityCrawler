@@ -21,13 +21,14 @@ namespace InfinityCrawler
 		private HttpClient HttpClient { get; }
 		private ILogger Logger { get; }
 
-		public Crawler()
+		public Crawler(ILogger logger = null)
 		{
 			HttpClient = new HttpClient(new HttpClientHandler
 			{
 				AllowAutoRedirect = false,
 				UseCookies = false
 			});
+			Logger = logger;
 		}
 
 		public Crawler(HttpClient httpClient, ILogger logger = null)
@@ -65,6 +66,7 @@ namespace InfinityCrawler
 			{
 				using (requestResult.Content)
 				{
+					Logger.LogInformation("Location: {}", crawlState.Location);
 					var headers = new CrawlHeaders(requestResult.ResponseHeaders, requestResult.ContentHeaders);
 					var content = settings.ContentProcessor.Parse(crawlState.Location, headers, requestResult.Content);
 					requestResult.Content.Seek(0, SeekOrigin.Begin);
