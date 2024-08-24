@@ -17,7 +17,7 @@ namespace Demo.Console
 			logger.LogInformation("Example log message");
 
 			var crawler = new Crawler(logger);
-			var result = await crawler.Crawl(new Uri("https://curatle.com/custom_mechanical_keyboards"), new CrawlSettings
+			var result = await crawler.Crawl(new Uri("https://zamunda.net/"), new CrawlSettings
 			{
 				UserAgent = "MyVeryOwnWebCrawler/1.0",
 				RequestProcessorOptions = new RequestProcessorOptions

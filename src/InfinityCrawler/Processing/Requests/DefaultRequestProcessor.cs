@@ -26,7 +26,7 @@ namespace InfinityCrawler.Processing.Requests
 			_playwright = Playwright.CreateAsync().Result;
 			IBrowser browser = _playwright.Firefox.LaunchAsync(new BrowserTypeLaunchOptions
 			{
-				Headless = false // Set to false if you want to debug with the browser UI
+				Headless = true // Set to false if you want to debug with the browser UI
 			}).Result;
 
 			_playwrightBrowserContext = browser.NewContextAsync().Result;
