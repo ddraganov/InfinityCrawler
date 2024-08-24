@@ -17,7 +17,7 @@ namespace Demo.Console
 			logger.LogInformation("Example log message");
 
 			var crawler = new Crawler(logger);
-			var result = await crawler.Crawl(new Uri("https://zamunda.net/"), new CrawlSettings
+			var result = await crawler.Crawl(new Uri("https://playwright.dev"), new CrawlSettings
 			{
 				UserAgent = "MyVeryOwnWebCrawler/1.0",
 				RequestProcessorOptions = new RequestProcessorOptions
