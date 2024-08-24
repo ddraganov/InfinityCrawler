@@ -65,7 +65,7 @@ namespace InfinityCrawler
 				{
 					Logger.LogInformation("Location: {}", crawlState.Location);
 					var headers = new CrawlHeaders(requestResult.ResponseHeaders, requestResult.ContentHeaders);
-					var content = settings.ContentProcessor.Parse(crawlState.Location, headers, requestResult.Content);
+					CrawledContent content = settings.ContentProcessor.Parse(crawlState.Location, headers, requestResult.Content);
 					requestResult.Content.Seek(0, SeekOrigin.Begin);
 					content.RawContent = await new StreamReader(requestResult.Content).ReadToEndAsync();
 					crawlRunner.AddResult(crawlState.Location, content);

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
+﻿using System.Collections.Generic;
 using InfinityCrawler.Processing.Content;
 using InfinityCrawler.Processing.Requests;
 
