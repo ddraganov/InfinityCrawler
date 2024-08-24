@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using InfinityCrawler.Internal;
-using InfinityCrawler.Processing.Content;
 using InfinityCrawler.Processing.Requests;
 using Microsoft.Extensions.Logging;
 using TurnerSoftware.RobotsExclusionTools;
@@ -48,7 +46,7 @@ namespace InfinityCrawler
 
 			UpdateCrawlDelay(robotsFile, settings.UserAgent, settings.RequestProcessorOptions);
 
-			var crawlRunner = new CrawlRunner(baseUri, robotsFile, HttpClient, settings, Logger);
+			var crawlRunner = new CrawlRunner(baseUri, robotsFile, settings, Logger);
 
 			//Use any links referred to by the sitemap as a starting point
 			var urisFromSitemap = (await new SitemapQuery(HttpClient)
@@ -72,7 +70,7 @@ namespace InfinityCrawler
 			return result;
 		}
 
-		private void UpdateCrawlDelay(RobotsFile robotsFile, string userAgent, RequestProcessorOptions requestProcessorOptions)
+		private static void UpdateCrawlDelay(RobotsFile robotsFile, string userAgent, RequestProcessorOptions requestProcessorOptions)
 		{
 			var minimumCrawlDelayInMilliseconds = 0;
 

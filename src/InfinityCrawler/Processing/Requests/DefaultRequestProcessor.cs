@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +26,7 @@ namespace InfinityCrawler.Processing.Requests
 			_playwright = Playwright.CreateAsync().Result;
 			IBrowser browser = _playwright.Firefox.LaunchAsync(new BrowserTypeLaunchOptions
 			{
-				Headless = true // Set to false if you want to debug with the browser UI
+				Headless = false // Set to false if you want to debug with the browser UI
 			}).Result;
 
 			_playwrightBrowserContext = browser.NewContextAsync().Result;
@@ -41,12 +40,9 @@ namespace InfinityCrawler.Processing.Requests
 
 		public int PendingRequests { get; private set; }
 
-		public async Task ProcessAsync(HttpClient httpClient, Func<RequestResult, Task> responseAction, RequestProcessorOptions options, CancellationToken cancellationToken = default)
+		public async Task ProcessAsync(Func<RequestResult, Task> responseAction, RequestProcessorOptions options, CancellationToken cancellationToken = default)
 		{
-			if (options == null)
-			{
-				throw new ArgumentNullException(nameof(options));
-			}
+			ArgumentNullException.ThrowIfNull(options);
 
 			var random = new Random();
 			var activeRequests = new ConcurrentDictionary<Task<RequestResult>, RequestContext>(options.MaxNumberOfSimultaneousRequests, options.MaxNumberOfSimultaneousRequests);
@@ -55,7 +51,7 @@ namespace InfinityCrawler.Processing.Requests
 			var successesSinceLastThrottle = 0;
 			var requestCount = 0;
 
-			while (activeRequests.Count > 0 || !RequestQueue.IsEmpty)
+			while (!activeRequests.IsEmpty || !RequestQueue.IsEmpty)
 			{
 				cancellationToken.ThrowIfCancellationRequested();
 
@@ -85,9 +81,9 @@ namespace InfinityCrawler.Processing.Requests
 							CancellationToken = cancellationToken
 						};
 
-						Logger?.LogDebug($"Request #{requestContext.RequestNumber} ({requestUri}) starting with a {requestStartDelay}ms delay.");
+						Logger?.LogDebug("Request #{} ({}) starting with a {}ms delay.", requestContext.RequestNumber, requestUri, requestStartDelay);
 
-						var task = PerformRequestAsync(httpClient, requestContext);
+						var task = PerformRequestAsync(requestContext);
 
 						activeRequests.TryAdd(task, requestContext);
 						requestCount++;
@@ -125,7 +121,7 @@ namespace InfinityCrawler.Processing.Requests
 					{
 						successesSinceLastThrottle = 0;
 						currentBackoff += (int)options.ThrottlingRequestBackoff.TotalMilliseconds;
-						Logger?.LogInformation($"Increased backoff to {currentBackoff}ms.");
+						Logger?.LogInformation("Increased backoff to {}ms.", currentBackoff);
 					}
 					else if (currentBackoff > 0)
 					{
@@ -135,16 +131,16 @@ namespace InfinityCrawler.Processing.Requests
 							var newBackoff = currentBackoff - options.ThrottlingRequestBackoff.TotalMilliseconds;
 							currentBackoff = Math.Max(0, (int)newBackoff);
 							successesSinceLastThrottle = 0;
-							Logger?.LogInformation($"Decreased backoff to {currentBackoff}ms.");
+							Logger?.LogInformation("Decreased backoff to {}ms.", currentBackoff);
 						}
 					}
 				}
 			}
 
-			Logger?.LogDebug($"Completed processing {requestCount} requests.");
+			Logger?.LogDebug("Completed processing {} requests.", requestCount);
 		}
 
-		private async Task<RequestResult> PerformRequestAsync(HttpClient httpClient, RequestContext context)
+		private async Task<RequestResult> PerformRequestAsync(RequestContext context)
 		{
 			if (context.RequestStartDelay > 0)
 			{
@@ -169,7 +165,7 @@ namespace InfinityCrawler.Processing.Requests
 
 				// Scrape the rendered text from the page
 				//var content = await page.EvaluateAsync<string>("document.body.innerText");
-				string fileName = Guid.NewGuid().ToString();
+				var fileName = Guid.NewGuid().ToString();
 				var content = await page.ContentAsync();
 				File.WriteAllText("D:\\crawled-pages\\" + fileName + "_pl", content);
 				//var timeoutToken = new CancellationTokenSource(context.RequestTimeout).Token;
@@ -185,7 +181,7 @@ namespace InfinityCrawler.Processing.Requests
 
 				context.CancellationToken.ThrowIfCancellationRequested();
 
-				Logger?.LogDebug($"Request #{context.RequestNumber} completed successfully in {context.Timer.ElapsedMilliseconds}ms.");
+				Logger?.LogDebug("Request #{} completed successfully in {}ms.", context.RequestNumber, context.Timer.ElapsedMilliseconds);
 
 				return new RequestResult
 				{
@@ -200,15 +196,15 @@ namespace InfinityCrawler.Processing.Requests
 			}
 			catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
 			{
-				Logger?.LogDebug($"Request #{context.RequestNumber} cancelled.");
+				Logger?.LogDebug("Request #{} cancelled.", context.RequestNumber);
 				return null;
 			}
 			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
 			{
 				context.Timer.Stop();
 
-				Logger?.LogDebug($"Request #{context.RequestNumber} completed with error in {context.Timer.ElapsedMilliseconds}ms.");
-				Logger?.LogTrace(ex, $"Request #{context.RequestNumber} Exception: {ex.Message}");
+				Logger?.LogDebug("Request #{} completed with error in {}ms.", context.RequestNumber, context.Timer.ElapsedMilliseconds);
+				Logger?.LogTrace(ex, "Request #{} Exception: {}", context.RequestNumber, ex.Message);
 
 				return new RequestResult
 				{

@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Net.Mime;
-using System.Text;
-using System.Threading.Tasks;
 using HtmlAgilityPack;
 using InfinityCrawler.Internal;
 
@@ -42,9 +37,9 @@ namespace InfinityCrawler.Processing.Content
 			document.LoadHtml(content);
 			
 			var pageRobotRules = new List<string>();
-			if (headers.ContainsKey("X-Robots-Tag"))
+			if (headers.TryGetValue("X-Robots-Tag", out var value))
 			{
-				var robotsHeaderValues = headers["X-Robots-Tag"];
+				var robotsHeaderValues = value;
 				pageRobotRules.AddRange(robotsHeaderValues.Split(","));
 			}
 
@@ -61,20 +56,20 @@ namespace InfinityCrawler.Processing.Content
 				}
 			}
 
-			crawledContent.PageRobotRules = pageRobotRules.ToArray();
+			crawledContent.PageRobotRules = [.. pageRobotRules];
 			crawledContent.CanonicalUri = GetCanonicalUri(document, requestUri);
 			crawledContent.Links = GetLinks(document, requestUri).ToArray();
 
 			return crawledContent;
 		}
 		
-		private string GetBaseHref(HtmlDocument document)
+		private static string GetBaseHref(HtmlDocument document)
 		{
 			var baseNode = document.DocumentNode.SelectSingleNode("html/head/base");
 			return baseNode?.GetAttributeValue("href", string.Empty) ?? string.Empty;
 		}
 
-		private Uri GetCanonicalUri(HtmlDocument document, Uri requestUri)
+		private static Uri GetCanonicalUri(HtmlDocument document, Uri requestUri)
 		{
 			var linkNodes = document.DocumentNode.SelectNodes("html/head/link");
 			if (linkNodes != null)
@@ -93,7 +88,7 @@ namespace InfinityCrawler.Processing.Content
 			return null;
 		}
 
-		private IEnumerable<CrawlLink> GetLinks(HtmlDocument document, Uri requestUri)
+		private static IEnumerable<CrawlLink> GetLinks(HtmlDocument document, Uri requestUri)
 		{
 			var anchorNodes = document.DocumentNode.SelectNodes("//a");
 			if (anchorNodes != null)

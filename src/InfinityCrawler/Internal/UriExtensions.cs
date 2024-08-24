@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace InfinityCrawler.Internal
 {
@@ -8,7 +6,7 @@ namespace InfinityCrawler.Internal
 	{
 		public static Uri BuildUriFromHref(this Uri pageUri, string href, string baseHref = null)
 		{
-			var hrefPieces = href.Split(new[] { '#' }, 2);
+			var hrefPieces = href.Split(['#'], 2);
 			var hrefWithoutFragment = hrefPieces[0];
 			var hrefFragment = hrefPieces.Length > 1 ? hrefPieces[1] : null;
 

@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
 
 namespace InfinityCrawler
 {
@@ -52,6 +49,6 @@ namespace InfinityCrawler
 		public string RawContent { get; set; }
 		
 		public Uri CanonicalUri { get; set; }
-		public IEnumerable<CrawlLink> Links { get; set; } = Enumerable.Empty<CrawlLink>();
+		public IEnumerable<CrawlLink> Links { get; set; } = [];
 	}
 }

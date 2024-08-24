@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using InfinityCrawler.Processing.Requests;
@@ -19,7 +18,6 @@ namespace InfinityCrawler.Internal
 		public CrawlSettings Settings { get; }
 
 		private RobotsFile RobotsFile { get; }
-		private HttpClient HttpClient { get; }
 
 		private ILogger Logger { get; }
 
@@ -27,13 +25,12 @@ namespace InfinityCrawler.Internal
 
 		private ConcurrentDictionary<Uri, UriCrawlState> UriCrawlStates { get; } = new ConcurrentDictionary<Uri, UriCrawlState>();
 		private ConcurrentDictionary<Uri, byte> SeenUris { get; } = new ConcurrentDictionary<Uri, byte>();
-		private ConcurrentBag<CrawledUri> CrawledUris { get; } = new ConcurrentBag<CrawledUri>();
+		private ConcurrentBag<CrawledUri> CrawledUris { get; } = [];
 
-		public CrawlRunner(Uri baseUri, RobotsFile robotsFile, HttpClient httpClient, CrawlSettings crawlSettings, ILogger logger = null)
+		public CrawlRunner(Uri baseUri, RobotsFile robotsFile,  CrawlSettings crawlSettings, ILogger logger = null)
 		{
 			BaseUri = baseUri;
 			RobotsFile = robotsFile;
-			HttpClient = httpClient;
 			Settings = crawlSettings;
 
 			Logger = logger;
@@ -42,7 +39,7 @@ namespace InfinityCrawler.Internal
 			AddRequest(baseUri);
 		}
 
-		private Uri StripFragment(Uri uri)
+		private static Uri StripFragment(Uri uri)
 		{
 			return new UriBuilder(uri)
 			{
@@ -76,7 +73,7 @@ namespace InfinityCrawler.Internal
 				var redirectCrawlState = new UriCrawlState
 				{
 					Location = absoluteRedirectUri,
-					Redirects = crawlState.Redirects ?? new List<CrawledUriRedirect>()
+					Redirects = crawlState.Redirects ?? []
 				};
 				redirectCrawlState.Redirects.Add(new CrawledUriRedirect
 				{
@@ -96,7 +93,7 @@ namespace InfinityCrawler.Internal
 				var robotsPageDefinition = RobotsPageParser.FromRules(content.PageRobotRules);
 				if (!robotsPageDefinition.CanIndex(Settings.UserAgent))
 				{
-					Logger?.LogDebug($"Result content for {requestUri} has been blocked by an in-page Robots rule.");
+					Logger?.LogDebug("Result content for {} has been blocked by an in-page Robots rule.", requestUri);
 					AddResult(new CrawledUri
 					{
 						Location = crawlState.Location,
@@ -107,7 +104,7 @@ namespace InfinityCrawler.Internal
 				}
 				else
 				{
-					Logger?.LogDebug($"Result for {requestUri} has completed successfully with content.");
+					Logger?.LogDebug("Result for {} has completed successfully with content.", requestUri);
 
 					AddResult(new CrawledUri
 					{
@@ -141,13 +138,13 @@ namespace InfinityCrawler.Internal
 			{
 				if (!(requestUri.Host == BaseUri.Host || Settings.HostAliases.Contains(requestUri.Host)))
 				{
-					Logger?.LogDebug($"Request containing host {requestUri.Host} is not in the list of allowed hosts. This request will be ignored.");
+					Logger?.LogDebug("Request containing host {} is not in the list of allowed hosts. This request will be ignored.", requestUri.Host);
 					return;
 				}
 			}
 			else if (requestUri.Host != BaseUri.Host)
 			{
-				Logger?.LogDebug($"Request containing host {requestUri.Host} doesn't match the base host. This request will be ignored.");
+				Logger?.LogDebug("Request containing host {} doesn't match the base host. This request will be ignored.", requestUri.Host);
 				return;
 			}
 
@@ -156,7 +153,7 @@ namespace InfinityCrawler.Internal
 				var expectedCrawlCount = CrawledUris.Count + Settings.RequestProcessor.PendingRequests;
 				if (expectedCrawlCount == Settings.MaxNumberOfPagesToCrawl)
 				{
-					Logger?.LogDebug($"Page crawl limit blocks adding request for {requestUri}. This request will be ignored.");
+					Logger?.LogDebug("Page crawl limit blocks adding request for {}. This request will be ignored.", requestUri);
 					return;
 				}
 			}
@@ -171,9 +168,9 @@ namespace InfinityCrawler.Internal
 					return;
 				}
 
-				if (crawlState.Requests.Count() == Settings.NumberOfRetries)
+				if (crawlState.Requests.Count == Settings.NumberOfRetries)
 				{
-					Logger?.LogDebug($"Request for {requestUri} has hit the maximum retry limit ({Settings.NumberOfRetries}).");
+					Logger?.LogDebug("Request for {} has hit the maximum retry limit ({}).", requestUri, Settings.NumberOfRetries);
 					AddResult(new CrawledUri
 					{
 						Location = crawlState.Location,
@@ -186,7 +183,7 @@ namespace InfinityCrawler.Internal
 
 				if (crawlState.Redirects != null && crawlState.Redirects.Count == Settings.MaxNumberOfRedirects)
 				{
-					Logger?.LogDebug($"Request for {requestUri} has hit the maximum redirect limit ({Settings.MaxNumberOfRedirects}).");
+					Logger?.LogDebug("Request for {} has hit the maximum redirect limit ({}).", requestUri, Settings.MaxNumberOfRedirects);
 					AddResult(new CrawledUri
 					{
 						Location = crawlState.Location,
@@ -199,12 +196,12 @@ namespace InfinityCrawler.Internal
 
 			if (RobotsFile.IsAllowedAccess(requestUri, Settings.UserAgent))
 			{
-				Logger?.LogDebug($"Added {requestUri} to request queue.");
+				Logger?.LogDebug("Added {} to request queue.", requestUri);
 				Settings.RequestProcessor.Add(requestUri);
 			}
 			else
 			{
-				Logger?.LogDebug($"Request for {requestUri} has been blocked by the Robots.txt file.");
+				Logger?.LogDebug("Request for {} has been blocked by the Robots.txt file.", requestUri);
 				AddResult(new CrawledUri
 				{
 					Location = requestUri,
@@ -224,7 +221,6 @@ namespace InfinityCrawler.Internal
 		)
 		{
 			await Settings.RequestProcessor.ProcessAsync(
-				HttpClient,
 				async (requestResult) =>
 				{
 					var crawlState = UriCrawlStates.GetOrAdd(requestResult.RequestUri, new UriCrawlState
@@ -235,7 +231,7 @@ namespace InfinityCrawler.Internal
 					if (requestResult.Exception != null)
 					{
 						//Retry failed requests
-						Logger?.LogDebug($"An exception occurred while requesting {crawlState.Location}. This URL will be added to the request queue to be attempted again later.");
+						Logger?.LogDebug("An exception occurred while requesting {}. This URL will be added to the request queue to be attempted again later.", crawlState.Location);
 						crawlState.Requests.Add(new CrawlRequest
 						{
 							RequestStart = requestResult.RequestStart,
@@ -263,7 +259,7 @@ namespace InfinityCrawler.Internal
 						if (redirectStatusCodes.Contains(crawlRequest.StatusCode.Value))
 						{
 							string locationHeaderValue = requestResult.Headers.GetValueOrDefault("Location");
-							Logger?.LogDebug($"Result for {crawlState.Location} was a redirect ({locationHeaderValue}). This URL will be added to the request queue.");
+							Logger?.LogDebug("Result for {} was a redirect ({}). This URL will be added to the request queue.", crawlState.Location, locationHeaderValue);
 							AddRedirect(crawlState.Location, new Uri(locationHeaderValue));
 						}
 						else if (crawlRequest.IsSuccessfulStatus)
@@ -273,14 +269,14 @@ namespace InfinityCrawler.Internal
 						else if ((int)crawlRequest.StatusCode >= 500 && (int)crawlRequest.StatusCode <= 599)
 						{
 							//On server errors, try to crawl the page again later
-							Logger?.LogDebug($"Result for {crawlState.Location} was unexpected ({crawlRequest.StatusCode}). This URL will be added to the request queue to be attempted again later.");
+							Logger?.LogDebug("Result for {} was unexpected ({}). This URL will be added to the request queue to be attempted again later.", crawlState.Location, crawlRequest.StatusCode);
 							AddRequest(crawlState.Location);
 						}
 						else
 						{
 							//On any other error, just save what we have seen and move on
 							//Consider the content of the request irrelevant
-							Logger?.LogDebug($"Result for {crawlState.Location} was unexpected ({crawlRequest.StatusCode}). No further requests will be attempted.");
+							Logger?.LogDebug("Result for {} was unexpected ({}). No further requests will be attempted.", crawlState.Location, crawlRequest.StatusCode);
 							AddResult(new CrawledUri
 							{
 								Location = crawlState.Location,
@@ -295,9 +291,9 @@ namespace InfinityCrawler.Internal
 				cancellationToken
 			);
 
-			Logger?.LogDebug($"Completed crawling {CrawledUris.Count} pages.");
+			Logger?.LogDebug("Completed crawling {} pages.", CrawledUris.Count);
 
-			return CrawledUris.ToArray();
+			return [.. CrawledUris];
 		}
 	}
 }
