@@ -1,16 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net461;netcoreapp3.1;net5.0;net6.0;</TargetFrameworks>
+		<TargetFrameworks>net8.0</TargetFrameworks>
 
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
-		<PackageReference Include="MSTest.TestAdapter" Version="3.0.4" />
-		<PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
-		<PackageReference Include="coverlet.collector" Version="6.0.0">
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
+		<PackageReference Include="MSTest.TestAdapter" Version="3.5.2" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.5.2" />
+		<PackageReference Include="coverlet.collector" Version="6.0.2">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -29,9 +29,9 @@
 		<Otherwise>
 			<ItemGroup>
 				<!-- These are the highest versions that are compatible with all other target frameworks -->
-				<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.22" />
-				<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.1.22" />
-				<PackageReference Include="Microsoft.Extensions.Logging.TraceSource" Version="3.1.22" />
+				<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+				<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+				<PackageReference Include="Microsoft.Extensions.Logging.TraceSource" Version="8.0.0" />
 			</ItemGroup>
 		</Otherwise>
 	</Choose>

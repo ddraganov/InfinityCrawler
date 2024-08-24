@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.TestHost;
 
 namespace InfinityCrawler.Tests.TestSite
 {

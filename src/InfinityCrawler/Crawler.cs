@@ -1,18 +1,15 @@
-﻿using InfinityCrawler.Internal;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
+using InfinityCrawler.Internal;
+using InfinityCrawler.Processing.Content;
 using InfinityCrawler.Processing.Requests;
+using Microsoft.Extensions.Logging;
 using TurnerSoftware.RobotsExclusionTools;
 using TurnerSoftware.SitemapTools;
-using Microsoft.Extensions.Logging;
-using InfinityCrawler.Processing.Content;
 
 namespace InfinityCrawler
 {
