@@ -1,10 +1,10 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
 
 namespace InfinityCrawler.Processing.Content
 {
 	public interface IContentProcessor
 	{
-		CrawledContent Parse(Uri requestUri, CrawlHeaders headers, Stream contentStream);
+		CrawledContent Parse(Uri requestUri, Dictionary<string, string> headers, string content);
 	}
 }

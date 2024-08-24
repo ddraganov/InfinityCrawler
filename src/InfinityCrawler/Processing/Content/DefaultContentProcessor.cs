@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
@@ -12,23 +13,39 @@ namespace InfinityCrawler.Processing.Content
 {
 	public class DefaultContentProcessor : IContentProcessor
 	{
-		public CrawledContent Parse(Uri requestUri, CrawlHeaders headers, Stream contentStream)
+		public CrawledContent Parse(Uri requestUri, Dictionary<string, string> headers, string content)
 		{
+			string contentTypeHeaderValue = headers.GetValueOrDefault("content-type");
+			var contentTypeParts = contentTypeHeaderValue?.Split(';');
+			var mediaType = contentTypeParts?[0].Trim();
+			string charset = null;
+			if (contentTypeHeaderValue != null && contentTypeHeaderValue.Contains("charset="))
+			{
+				foreach (var part in contentTypeParts)
+				{
+					if (part.Trim().StartsWith("charset=", StringComparison.OrdinalIgnoreCase))
+					{
+						charset = part.Split('=')[1].Trim();
+						break;
+					}
+				}
+			}
+
 			var crawledContent = new CrawledContent
 			{
-				ContentType = headers.ContentHeaders.ContentType?.MediaType,
-				CharacterSet = headers.ContentHeaders.ContentType?.CharSet,
-				ContentEncoding = headers.ContentHeaders.ContentEncoding != null ? string.Join(",", headers.ContentHeaders.ContentEncoding) : null
+				ContentType = contentTypeHeaderValue?.Split(';')[0].Trim(),
+				CharacterSet = charset,
+				//ContentEncoding = headers.GetValueOrDefault("content-encoding")
 			};
 
 			var document = new HtmlDocument();
-			document.Load(contentStream);
+			document.LoadHtml(content);
 			
 			var pageRobotRules = new List<string>();
-			if (headers.ResponseHeaders.Contains("X-Robots-Tag"))
+			if (headers.ContainsKey("X-Robots-Tag"))
 			{
-				var robotsHeaderValues = headers.ResponseHeaders.GetValues("X-Robots-Tag");
-				pageRobotRules.AddRange(robotsHeaderValues);
+				var robotsHeaderValues = headers["X-Robots-Tag"];
+				pageRobotRules.AddRange(robotsHeaderValues.Split(","));
 			}
 
 			var metaNodes = document.DocumentNode.SelectNodes("html/head/meta");

@@ -20,11 +20,11 @@ namespace InfinityCrawler.Internal
 
 		private RobotsFile RobotsFile { get; }
 		private HttpClient HttpClient { get; }
-		
+
 		private ILogger Logger { get; }
-		
+
 		private RobotsPageParser RobotsPageParser { get; }
-		
+
 		private ConcurrentDictionary<Uri, UriCrawlState> UriCrawlStates { get; } = new ConcurrentDictionary<Uri, UriCrawlState>();
 		private ConcurrentDictionary<Uri, byte> SeenUris { get; } = new ConcurrentDictionary<Uri, byte>();
 		private ConcurrentBag<CrawledUri> CrawledUris { get; } = new ConcurrentBag<CrawledUri>();
@@ -41,7 +41,7 @@ namespace InfinityCrawler.Internal
 
 			AddRequest(baseUri);
 		}
-		
+
 		private Uri StripFragment(Uri uri)
 		{
 			return new UriBuilder(uri)
@@ -72,7 +72,7 @@ namespace InfinityCrawler.Internal
 			{
 				var absoluteRedirectUri = new Uri(requestUri, redirectUri);
 				absoluteRedirectUri = StripFragment(absoluteRedirectUri);
-				
+
 				var redirectCrawlState = new UriCrawlState
 				{
 					Location = absoluteRedirectUri,
@@ -262,8 +262,9 @@ namespace InfinityCrawler.Internal
 						};
 						if (redirectStatusCodes.Contains(crawlRequest.StatusCode.Value))
 						{
-							Logger?.LogDebug($"Result for {crawlState.Location} was a redirect ({requestResult.ResponseHeaders.Location}). This URL will be added to the request queue.");
-							AddRedirect(crawlState.Location, requestResult.ResponseHeaders.Location);
+							string locationHeaderValue = requestResult.Headers.GetValueOrDefault("Location");
+							Logger?.LogDebug($"Result for {crawlState.Location} was a redirect ({locationHeaderValue}). This URL will be added to the request queue.");
+							AddRedirect(crawlState.Location, new Uri(locationHeaderValue));
 						}
 						else if (crawlRequest.IsSuccessfulStatus)
 						{

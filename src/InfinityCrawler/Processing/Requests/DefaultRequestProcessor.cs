@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -157,20 +159,26 @@ namespace InfinityCrawler.Processing.Requests
 				var page = await _playwrightBrowserContext.NewPageAsync();
 
 				// Navigate to the web page and wait for JavaScript to finish rendering
-				await page.GotoAsync(context.RequestUri.ToString(), new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+				IResponse response = await page.GotoAsync(
+					context.RequestUri.ToString(), 
+					new PageGotoOptions 
+					{
+						WaitUntil = WaitUntilState.DOMContentLoaded,
+						Timeout = Convert.ToSingle(context.RequestTimeout.TotalMilliseconds)
+					});
 
 				// Scrape the rendered text from the page
 				//var content = await page.EvaluateAsync<string>("document.body.innerText");
 				string fileName = Guid.NewGuid().ToString();
 				var content = await page.ContentAsync();
-				File.WriteAllText("D:\\dfsgds\\" + fileName + "_pl", content);
-				var timeoutToken = new CancellationTokenSource(context.RequestTimeout).Token;
-				var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken, timeoutToken).Token;
-				using var response = await httpClient.GetAsync(context.RequestUri, combinedToken);
-				var contentStream = new MemoryStream();
-				await response.Content.CopyToAsync(contentStream);
-				File.WriteAllText("D:\\dfsgds\\" + fileName + "_nat", await response.Content.ReadAsStringAsync());
-				contentStream.Seek(0, SeekOrigin.Begin);
+				File.WriteAllText("D:\\crawled-pages\\" + fileName + "_pl", content);
+				//var timeoutToken = new CancellationTokenSource(context.RequestTimeout).Token;
+				//var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken, timeoutToken).Token;
+				//using var response = await httpClient.GetAsync(context.RequestUri, combinedToken);
+				//var contentStream = new MemoryStream();
+				//await response.Content.CopyToAsync(contentStream);
+				//File.WriteAllText("D:\\dfsgds\\" + fileName + "_nat", await response.Content.ReadAsStringAsync());
+				//contentStream.Seek(0, SeekOrigin.Begin);
 
 				//We only want to time the request, not the handling of the response
 				context.Timer.Stop();
@@ -184,10 +192,9 @@ namespace InfinityCrawler.Processing.Requests
 					RequestUri = context.RequestUri,
 					RequestStart = requestStart,
 					RequestStartDelay = context.RequestStartDelay,
-					StatusCode = response.StatusCode,
-					ResponseHeaders = response.Headers,
-					ContentHeaders = response.Content.Headers,
-					Content = contentStream,
+					StatusCode = (HttpStatusCode)response.Status,
+					Headers = response.Headers,
+					Content = content,
 					ElapsedTime = context.Timer.Elapsed
 				};
 			}
